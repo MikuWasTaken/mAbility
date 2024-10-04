@@ -1,0 +1,11 @@
+name: mAbility
+main: me.santiago.mAbility
+version: 1.0
+commands:
+  giveability:
+    description: "Da un item de habilidad al jugador."
+    usage: "/giveability <nombre>"
+
+  ability:
+    description: "Comando para gestionar habilidades."
+    usage: "/ability setcooldown <nombre> <tiempo_en_segundos>"
