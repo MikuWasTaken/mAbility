@@ -10,7 +10,7 @@ import org.bukkit.potion.PotionEffectType;
 
 public class Resistance3 extends Ability {
     public Resistance3() {
-        super("resistance3", 90);
+        super("resistance3", 1);
     }
 
     @Override
@@ -24,6 +24,7 @@ public class Resistance3 extends Ability {
 
     @Override
     public void use(Player player) {
+        player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 100, 2));
         applyEffectToFactionMembers(player, new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 100, 2));
         player.sendMessage(ChatColor.GREEN + "¡Has activado Resistencia III por 5 segundos para ti y los miembros cercanos de tu facción!");
         player.getInventory().removeItem(createItem());

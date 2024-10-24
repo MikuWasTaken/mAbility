@@ -29,17 +29,23 @@ public class AbilityManager {
     }
 
     public boolean useAbility(Player player, ItemStack item) {
-        for (Ability ability : abilities.values()) {
-            if (ability.createItem().isSimilar(item)) {
-                if (canUseAbility(player, ability) && canUseGeneralAbility(player)) {
-                    ability.use(player);
-                    return true;
-                } else {
-                    return false; // No se puede usar la habilidad
-                }
+        Ability ability = findAbility(item);
+        if (ability != null) {
+            if (canUseAbility(player, ability) && canUseGeneralAbility(player)) {
+                ability.use(player);
+                return true;
             }
         }
-        return false; // No se encontró la habilidad
+        return false; // No se pudo usar la habilidad
+    }
+
+    private Ability findAbility(ItemStack item) {
+        for (Ability ability : abilities.values()) {
+            if (ability.createItem().isSimilar(item)) {
+                return ability;
+            }
+        }
+        return null; // No se encontró la habilidad
     }
 
     public ItemStack createAbility(String name) {

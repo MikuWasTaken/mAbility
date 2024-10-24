@@ -3,9 +3,23 @@ main: me.santiago.mAbility
 version: 1.0
 commands:
   giveability:
-    description: "Da un item de habilidad al jugador."
+    description: "Da una ability de tu eleccion a un jugador."
     usage: "/giveability <nombre>"
 
+    giveability:
+      description: "Da todos los Abilities a un jugador."
+      usage: "/giveability <usuario> all"
+
   ability:
-    description: "Comando para gestionar habilidades."
+    description: "Comando para gestionar abilities."
     usage: "/ability setcooldown <nombre> <tiempo_en_segundos>"
+
+    ability:
+      description: Manage abilities and their configuration
+      usage: /ability [menu|help]
+      aliases: [ abilities ]
+
+    permissions:
+      mability.menu:
+        description: Allows access to the ability configuration menu
+        default: op

@@ -8,16 +8,20 @@ import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class FocusMode extends Ability implements Listener {
-    private Map<UUID, UUID> focusedPlayers = new HashMap<>();
+    private final JavaPlugin plugin;
+    private final Map<UUID, UUID> focusedPlayers = new HashMap<>();
 
-    public FocusMode() {
+    public FocusMode(JavaPlugin plugin) {
         super("focusmode", 120);
+        this.plugin = plugin;
     }
 
     @Override
@@ -37,6 +41,14 @@ public class FocusMode extends Ability implements Listener {
             focusedPlayers.put(player.getUniqueId(), lastAttackerUUID);
             player.sendMessage(ChatColor.GREEN + "¡Has activado Focus Mode en " + lastAttacker.getName() + "!");
             player.getInventory().removeItem(createItem());
+
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    focusedPlayers.remove(player.getUniqueId());
+                    player.sendMessage(ChatColor.RED + "Tu Focus Mode ha terminado.");
+                }
+            }.runTaskLater(plugin, 1200L); // 60 segundos
         } else {
             player.sendMessage(ChatColor.RED + "No hay un jugador válido para enfocar.");
         }
@@ -54,4 +66,6 @@ public class FocusMode extends Ability implements Listener {
             attacker.sendMessage(ChatColor.RED + "¡Daño aumentado en un 30% contra tu objetivo enfocado!");
         }
     }
+
+    // Eliminamos la implementación de getLastAttacker aquí, ya que usaremos la de la clase padre
 }

@@ -7,10 +7,14 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.Material;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
 
-public class PocketBard extends Ability {
+public class PocketBard extends Ability implements Listener {
+
     public PocketBard() {
-        super("pocketbard", 120);
+        super("pocketbard", 0);
     }
 
     @Override
@@ -25,17 +29,41 @@ public class PocketBard extends Ability {
     @Override
     public void use(Player player) {
         Inventory gui = Bukkit.createInventory(null, 9, "Pocket Bard");
-        gui.setItem(2, createEffectItem("Fuerza II", Material.BLAZE_POWDER));
-        gui.setItem(4, createEffectItem("Resistencia III", Material.IRON_INGOT));
-        gui.setItem(6, createEffectItem("Regeneración III", Material.GHAST_TEAR));
+        gui.setItem(2, new Strength2().createItem());
+        gui.setItem(4, new Resistance3().createItem());
+        gui.setItem(6, new Regeneration3().createItem());
         player.openInventory(gui);
     }
 
-    private ItemStack createEffectItem(String name, Material material) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.YELLOW + name);
-        item.setItemMeta(meta);
-        return item;
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (event.getView().getTitle().equals("Pocket Bard")) {
+            event.setCancelled(true);
+            Player player = (Player) event.getWhoClicked();
+
+            if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
+
+            ItemStack clickedItem = event.getCurrentItem();
+            ItemStack abilityItem = null;
+            String abilityName = "";
+
+            if (clickedItem.isSimilar(new Strength2().createItem())) {
+                abilityItem = new Strength2().createItem();
+                abilityName = "Fuerza II";
+            } else if (clickedItem.isSimilar(new Resistance3().createItem())) {
+                abilityItem = new Resistance3().createItem();
+                abilityName = "Resistencia III";
+            } else if (clickedItem.isSimilar(new Regeneration3().createItem())) {
+                abilityItem = new Regeneration3().createItem();
+                abilityName = "Regeneración III";
+            }
+
+            if (abilityItem != null) {
+                player.getInventory().addItem(abilityItem);
+                player.sendMessage(ChatColor.GREEN + "¡Has obtenido la habilidad " + abilityName + "!");
+                player.closeInventory();
+                player.getInventory().removeItem(createItem());
+            }
+        }
     }
 }

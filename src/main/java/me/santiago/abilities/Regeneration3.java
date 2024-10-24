@@ -10,7 +10,7 @@ import org.bukkit.potion.PotionEffectType;
 
 public class Regeneration3 extends Ability {
     public Regeneration3() {
-        super("regeneration3", 90);
+        super("regeneration3", 1);
     }
 
     @Override
@@ -24,6 +24,7 @@ public class Regeneration3 extends Ability {
 
     @Override
     public void use(Player player) {
+        player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 2));
         applyEffectToFactionMembers(player, new PotionEffect(PotionEffectType.REGENERATION, 100, 2));
         player.sendMessage(ChatColor.GREEN + "¡Has activado Regeneración III por 5 segundos para ti y los miembros cercanos de tu facción!");
         player.getInventory().removeItem(createItem());

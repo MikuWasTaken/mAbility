@@ -1,7 +1,12 @@
 package me.santiago;
 
+import me.santiago.abilities.*;
+import me.santiago.commands.GiveAbilityAllCommand;
 import me.santiago.commands.GiveAbilityCommand;
 import me.santiago.commands.SetCooldownCommand;
+import me.santiago.commands.AbilityMenuCommand;
+import me.santiago.gui.AbilityGUIManager;
+import me.santiago.gui.AbilityChatListener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
@@ -24,18 +29,63 @@ public class mAbility extends JavaPlugin implements Listener {
     private HashMap<UUID, UUID> lastAttackers = new HashMap<>();
     private HashMap<UUID, Long> lastAttackTimes = new HashMap<>();
     private AbilityManager abilityManager;
+    private AbilityGUIManager guiManager;
+    private AbilityChatListener chatListener;
+
+    private ExoticBone exoticBone;
+    private FocusMode focusMode;
+    private PortableBard portableBard;
+    private RageBall rageBall;
+    private CloseCall closeCall;
+    private Switcher switcher;
+    private ComboAbility comboAbility;
+    private Firework firework;
+    private TimeWarp timeWarp;
+    private GuardianAngel guardianAngel;
+    private GrapplingHook grapplingHook;
 
     @Override
     public void onEnable() {
         getLogger().info("mAbility ha sido activado!");
         getServer().getPluginManager().registerEvents(this, this);
 
-        // Inicializar AbilityManager aquí
         abilityManager = new AbilityManager();
+        guiManager = new AbilityGUIManager(this);
+        chatListener = new AbilityChatListener(guiManager);
 
-        // Registrar comandos
+        exoticBone = new ExoticBone(this);
+        focusMode = new FocusMode(this);
+        portableBard = new PortableBard(this);
+        rageBall = new RageBall(this);
+        closeCall = new CloseCall();
+        switcher = new Switcher();
+        comboAbility = new ComboAbility();
+        firework = new Firework();
+        grapplingHook = new GrapplingHook();
+        guardianAngel = new GuardianAngel();
+
+
         getCommand("giveability").setExecutor(new GiveAbilityCommand(this));
         getCommand("ability").setExecutor(new SetCooldownCommand(abilityManager));
+        getCommand("giveability").setExecutor(new GiveAbilityAllCommand(this));
+
+        AbilityMenuCommand abilityMenuCommand = new AbilityMenuCommand(this, guiManager);
+        getCommand("ability").setExecutor(abilityMenuCommand);
+        getCommand("ability").setTabCompleter(abilityMenuCommand);
+
+        // Registro de listeners
+        getServer().getPluginManager().registerEvents(focusMode, this);
+        getServer().getPluginManager().registerEvents(rageBall, this);
+        getServer().getPluginManager().registerEvents(closeCall, this);
+        getServer().getPluginManager().registerEvents(switcher, this);
+        getServer().getPluginManager().registerEvents(comboAbility, this);
+        getServer().getPluginManager().registerEvents(firework, this);
+        getServer().getPluginManager().registerEvents(grapplingHook, this);
+        getServer().getPluginManager().registerEvents(timeWarp,this);
+        getServer().getPluginManager().registerEvents(guardianAngel, this);
+        getServer().getPluginManager().registerEvents(new PocketBard(), this);
+        getServer().getPluginManager().registerEvents(guiManager, this);
+        getServer().getPluginManager().registerEvents(chatListener, this);
     }
 
     @Override
@@ -48,9 +98,8 @@ public class mAbility extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
 
-        if (item == null) return;
+        if (item == null || item.getType() == Material.AIR) return;
 
-        // Verifica cada ítem de habilidad
         if (item.isSimilar(createStrength2Item())) {
             useStrength2Item(player);
         } else if (item.isSimilar(createNinjaStarItem())) {
@@ -61,30 +110,30 @@ public class mAbility extends JavaPlugin implements Listener {
             useResistance3Item(player);
         } else if (item.isSimilar(createRegeneration3Item())) {
             useRegeneration3Item(player);
-        } else if (item.isSimilar(createPortableBardItem())) {
-            usePortableBardItem(player);
-        } else if (item.isSimilar(createExoticBoneItem())) {
-            useExoticBoneItem(player);
+        } else if (item.isSimilar(exoticBone.createItem())) {
+            exoticBone.use(player);
+        } else if (item.isSimilar(focusMode.createItem())) {
+            focusMode.use(player);
+        } else if (item.isSimilar(portableBard.createItem())) {
+            portableBard.use(player);
+        } else if (item.isSimilar(rageBall.createItem())) {
+            rageBall.use(player);
         } else if (item.isSimilar(createBerserkItem())) {
             useBerserkItem(player);
-        } else if (item.isSimilar(createCloseCallItem())) {
+        } else if (item.isSimilar(closeCall.createItem())) {
             useCloseCallItem(player);
         } else if (item.isSimilar(createComboAbilityItem())) {
             useComboAbilityItem(player);
-        } else if (item.isSimilar(createFocusModeItem())) {
-            useFocusModeItem(player);
         } else if (item.isSimilar(createSamuraiAbilityItem())) {
             useSamuraiAbilityItem(player);
         } else if (item.isSimilar(createSwitcherItem())) {
             useSwitcherItem(player);
-        } else if (item.isSimilar(createRageBallItem())) {
-            useRageBallItem(player);
         }
     }
 
     // Métodos para crear ítems
     public ItemStack createStrength2Item() {
-        return createCustomItem(Material.EGG, ChatColor.RED + "Huevo de Fuerza II");
+        return createCustomItem(Material.BLAZE_POWDER, ChatColor.RED + "Fuerza II");
     }
 
     public ItemStack createNinjaStarItem() {
@@ -92,51 +141,67 @@ public class mAbility extends JavaPlugin implements Listener {
     }
 
     public ItemStack createPocketBardItem() {
-        return createCustomItem(Material.BOOK, ChatColor.GOLD + "Pocket Bard");
+        return createCustomItem(Material.INK_SACK, ChatColor.GOLD + "Pocket Bard");
     }
 
     public ItemStack createResistance3Item() {
-        return createCustomItem(Material.IRON_INGOT, ChatColor.GRAY + "Resistencia 3");
+        return createCustomItem(Material.IRON_INGOT, ChatColor.GRAY + "Resistencia III");
     }
 
     public ItemStack createRegeneration3Item() {
-        return createCustomItem(Material.GHAST_TEAR, ChatColor.LIGHT_PURPLE + "Regeneración 3");
-    }
-
-    public ItemStack createPortableBardItem() {
-        return createCustomItem(Material.GOLDEN_APPLE, ChatColor.YELLOW + "Portable Bard");
-    }
-
-    public ItemStack createExoticBoneItem() {
-        return createCustomItem(Material.BONE, ChatColor.WHITE + "Exotic Bone");
+        return createCustomItem(Material.GHAST_TEAR, ChatColor.LIGHT_PURPLE + "Regeneración III");
     }
 
     public ItemStack createBerserkItem() {
-        return createCustomItem(Material.BLAZE_POWDER, ChatColor.RED + "Berserk");
+        return createCustomItem(Material.WATCH, ChatColor.RED + "Berserk");
     }
 
     public ItemStack createCloseCallItem() {
-        return createCustomItem(Material.COOKIE, ChatColor.GOLD + "Close Call");
+        return closeCall.createItem();
     }
 
     public ItemStack createComboAbilityItem() {
-        return createCustomItem(Material.DIAMOND_SWORD, ChatColor.AQUA + "Combo Ability");
-    }
-
-    public ItemStack createFocusModeItem() {
-        return createCustomItem(Material.EYE_OF_ENDER, ChatColor.DARK_PURPLE + "Focus Mode");
+        return comboAbility.createItem();
     }
 
     public ItemStack createSamuraiAbilityItem() {
-        return createCustomItem(Material.IRON_SWORD, ChatColor.RED + "Samurai Ability");
+        return createCustomItem(Material.DIAMOND_SWORD, ChatColor.RED + "Samurai Ability");
     }
 
     public ItemStack createSwitcherItem() {
-        return createCustomItem(Material.SNOW_BALL, ChatColor.AQUA + "Switcher");
+        return switcher.createItem();
     }
 
     public ItemStack createRageBallItem() {
-        return createCustomItem(Material.SLIME_BALL, ChatColor.GREEN + "Rage Ball");
+        return rageBall.createItem();
+    }
+
+    public ItemStack createFocusModeItem() {
+        return focusMode.createItem();
+    }
+
+    public ItemStack createExoticBoneItem() {
+        return exoticBone.createItem();
+    }
+
+    public ItemStack createPortableBardItem() {
+        return portableBard.createItem();
+    }
+
+    public ItemStack createFireworkItem() {
+        return firework.createItem();
+    }
+
+    public ItemStack createGrapplingHookItem() {
+        return grapplingHook.createItem();
+    }
+
+    public ItemStack createGuardianAngelItem() {
+        return guardianAngel.createItem();
+    }
+
+    public ItemStack createTimeWarpItem() {
+        return timeWarp.createItem();
     }
 
     private ItemStack createCustomItem(Material material, String name) {
@@ -151,7 +216,7 @@ public class mAbility extends JavaPlugin implements Listener {
 
     // Métodos para usar los ítems
     private void useStrength2Item(Player player) {
-        if (checkCooldown(player, "strength2", 60)) {
+        if (checkCooldown(player, "strength2", 1)) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 100, 1));
             applyEffectToFactionMembers(player, PotionEffectType.INCREASE_DAMAGE, 100, 1);
             player.getWorld().playEffect(player.getLocation(), Effect.MOBSPAWNER_FLAMES, 0);
@@ -161,7 +226,7 @@ public class mAbility extends JavaPlugin implements Listener {
     }
 
     private void useNinjaStarItem(Player player) {
-        if (checkCooldown(player, "ninjastar", 30)) {
+        if (checkCooldown(player, "ninjastar", 1)) {
             Player lastAttacker = getLastAttacker(player);
             if (lastAttacker != null) {
                 player.teleport(lastAttacker.getLocation());
@@ -173,58 +238,83 @@ public class mAbility extends JavaPlugin implements Listener {
         }
     }
 
-    // Implementa el resto de los métodos para usar los ítems aquí...
     private void usePocketBardItem(Player player) {
-        // Implementación para PocketBard
+        if (checkCooldown(player, "pocketbard", 0)) {
+            PocketBard pocketBard = new PocketBard();
+            pocketBard.use(player);
+            player.getInventory().removeItem(createPocketBardItem());
+        }
     }
 
     private void useResistance3Item(Player player) {
-        // Implementación para Resistencia3
+        if (checkCooldown(player, "resistance3", 1)) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 100, 2));
+            applyEffectToFactionMembers(player, PotionEffectType.DAMAGE_RESISTANCE, 100, 2);
+            player.getWorld().playEffect(player.getLocation(), Effect.SMOKE, 0);
+            player.sendMessage(ChatColor.GREEN + "¡Has activado Resistencia III por 5 segundos!");
+            player.getInventory().removeItem(createResistance3Item());
+        }
     }
 
     private void useRegeneration3Item(Player player) {
-        // Implementación para Regeneración3
-    }
-
-    private void usePortableBardItem(Player player) {
-        // Implementación para PortableBard
-    }
-
-    private void useExoticBoneItem(Player player) {
-        // Implementación para ExoticBone
+        if (checkCooldown(player, "regeneration3", 1)) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 2));
+            applyEffectToFactionMembers(player, PotionEffectType.REGENERATION, 100, 2);
+            player.getWorld().playEffect(player.getLocation(), Effect.POTION_BREAK, 0);
+            player.sendMessage(ChatColor.GREEN + "¡Has activado Regeneracion III por 5 segundos!");
+            player.getInventory().removeItem(createRegeneration3Item());
+        }
     }
 
     private void useBerserkItem(Player player) {
-        // Implementación para Berserk
+        if (checkCooldown(player, "berserk", 1)) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 240, 2));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 240, 2));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 240, 1));
+            player.sendMessage(ChatColor.GREEN + "¡Has activado Berserk por 12 segundos!");
+            player.getInventory().removeItem(createBerserkItem());
+        }
     }
 
     private void useCloseCallItem(Player player) {
-        // Implementación para CloseCall
+        if (checkCooldown(player, "closecall", 120)) {
+            player.sendMessage(ChatColor.GREEN + "¡Close Call está listo para ser activado!");
+            player.getInventory().removeItem(closeCall.createItem());
+        }
     }
 
     private void useComboAbilityItem(Player player) {
-        // Implementación para ComboAbility
-    }
-
-    private void useFocusModeItem(Player player) {
-        // Implementación para FocusMode
+        if (checkCooldown(player, "comboability", 180)) {
+            player.sendMessage(ChatColor.RED + "¡Combo Ability activado! Golpea a tus enemigos para aumentar tu combo.");
+        }
     }
 
     private void useSamuraiAbilityItem(Player player) {
-        // Implementación para SamuraiAbility
+        if (checkCooldown(player, "samuraiability", 1)) {
+            Player lastAttacker = getLastAttacker(player);
+            if (lastAttacker != null) {
+                player.teleport(lastAttacker.getLocation());
+                player.sendMessage(ChatColor.GREEN + "¡Te has teletransportado a " + lastAttacker.getName() + "!");
+                player.getInventory().removeItem(createSamuraiAbilityItem());
+                player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 240, 1));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 200, 2));
+            } else {
+                player.sendMessage(ChatColor.RED + "No hay jugadores que te hayan atacado recientemente.");
+            }
+        }
     }
 
     private void useSwitcherItem(Player player) {
-        // Implementación para Switcher
-    }
-
-    private void useRageBallItem(Player player) {
-        // Implementación para RageBall
+        if (checkCooldown(player, "switcher", 30)) {
+            switcher.use(player);
+        }
     }
 
     private boolean checkCooldown(Player player, String ability, int cooldownTime) {
+        long currentTime = System.currentTimeMillis() / 1000;
         if (cooldowns.containsKey(player.getUniqueId())) {
-            long secondsLeft = ((cooldowns.get(player.getUniqueId()) / 1000) + cooldownTime) - (System.currentTimeMillis() / 1000);
+            long lastUsedTime = cooldowns.get(player.getUniqueId()) / 1000;
+            long secondsLeft = lastUsedTime + cooldownTime - currentTime;
             if (secondsLeft > 0) {
                 player.sendMessage(ChatColor.RED + "Debes esperar " + secondsLeft + " segundos para usar esto de nuevo.");
                 return false;
@@ -238,7 +328,7 @@ public class mAbility extends JavaPlugin implements Listener {
         UUID lastAttackerUUID = lastAttackers.get(player.getUniqueId());
         if (lastAttackerUUID != null) {
             long timeSinceLastAttack = System.currentTimeMillis() - lastAttackTimes.get(player.getUniqueId());
-            if (timeSinceLastAttack <= 10000) { // 10 segundos
+            if (timeSinceLastAttack <= 10000) {
                 return getServer().getPlayer(lastAttackerUUID);
             }
         }
@@ -246,10 +336,8 @@ public class mAbility extends JavaPlugin implements Listener {
     }
 
     private void applyEffectToFactionMembers(Player player, PotionEffectType effect, int duration, int amplifier) {
-        // Implementa la lógica de la facción aquí
-        // Por ahora, aplicaremos el efecto a jugadores cercanos
         for (Player nearbyPlayer : player.getWorld().getPlayers()) {
-            if (nearbyPlayer.getLocation().distance(player.getLocation()) <= 10) { // 10 bloques de radio
+            if (nearbyPlayer.getLocation().distance(player.getLocation()) <= 10) {
                 nearbyPlayer.addPotionEffect(new PotionEffect(effect, duration, amplifier));
             }
         }

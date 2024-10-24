@@ -28,6 +28,7 @@ public abstract class Ability {
         return null;
     }
 
+
     protected void applyEffectToNearbyPlayers(Player player, PotionEffect effect, double radius) {
         for (Player nearbyPlayer : player.getWorld().getPlayers()) {
             if (nearbyPlayer.getLocation().distance(player.getLocation()) <= radius) {
